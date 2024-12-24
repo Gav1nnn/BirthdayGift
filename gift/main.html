@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生日祝福</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000; /* 深黑色背景 */
+        }
+
+        canvas {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .button-container {
+            position: fixed;
+            bottom: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+        }
+
+        .button {
+            display: none;
+            margin: 10px;
+            padding: 10px 20px;
+            background: #ff69b4;
+            color: white;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .button:hover {
+            background: #ff1493;
+        }
+
+        #blessing {
+            display: none;
+            color: white;
+            font-size: 24px;
+            text-align: center;
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        img {
+            display: none;
+            position: fixed;
+            top: 35%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+        }
+
+        #cake-text {
+            display: none;
+            position: fixed;
+            top: 65%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 40px;
+            font-weight: bold;
+            text-align: center;
+            color: white; /* 恢复为默认颜色 */
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="button-container">
+        <button id="play-music" class="button" style="display: block;">今天是你的生日哦！来点音乐吧🎵^_^</button>
+        <button id="show-cake" class="button">过生日怎么能没有蛋糕呢🎂</button>
+        <button id="show-blessing" class="button">还有一件事！💖</button>
+        <button id="next-page" class="button">点击有惊喜哦~</button>
+    </div>
+
+    <div id="blessing">生日快乐！愿你天天开心，永远幸福！🎉</div>
+    <div id="cake-text" class="colortxt">生日快乐！🎉</div>
+    <img id="cake-image" src="cake.png" alt="蛋糕图片">
+
+    <audio id="bg-music" src="music.mp3" preload="auto"></audio>
+
+    <script>
+        // 星空背景
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width = window.innerWidth;
+        const h = canvas.height = window.innerHeight;
+        const stars = [];
+        const maxStars = 1300;
+
+        // 创建用于绘制星星的辅助画布
+        const canvas2 = document.createElement('canvas');
+        const ctx2 = canvas2.getContext('2d');
+        canvas2.width = 100;
+        canvas2.height = 100;
+
+        const half = canvas2.width / 2;
+        const gradient2 = ctx2.createRadialGradient(half, half, 0, half, half, half);
+        gradient2.addColorStop(0.025, '#FFF');  // 白色星星
+        gradient2.addColorStop(0.1, 'rgba(255, 255, 255, 0.3)');
+        gradient2.addColorStop(0.25, 'rgba(255, 255, 255, 0.1)');
+        gradient2.addColorStop(1, 'transparent');
+
+        ctx2.fillStyle = gradient2;
+        ctx2.beginPath();
+        ctx2.arc(half, half, half, 0, Math.PI * 2);
+        ctx2.fill();
+
+        function random(min, max) {
+            if (arguments.length < 2) {
+                max = min;
+                min = 0;
+            }
+            if (min > max) {
+                [min, max] = [max, min];
+            }
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function maxOrbit(x, y) {
+            const max = Math.max(x, y);
+            return Math.round(Math.sqrt(max ** 2 + max ** 2)) / 2;
+        }
+
+        class Star {
+            constructor() {
+                this.orbitRadius = random(maxOrbit(w, h));
+                this.radius = random(60, this.orbitRadius) / 8;
+                this.orbitX = w / 2;
+                this.orbitY = h / 2;
+                this.timePassed = random(0, maxStars);
+                this.speed = random(this.orbitRadius) / 50000;
+                this.alpha = random(2, 10) / 10;
+            }
+
+            draw() {
+                const x = Math.sin(this.timePassed) * this.orbitRadius + this.orbitX;
+                const y = Math.cos(this.timePassed) * this.orbitRadius + this.orbitY;
+                const twinkle = random(10);
+                if (twinkle === 1 && this.alpha > 0) this.alpha -= 0.05;
+                else if (twinkle === 2 && this.alpha < 1) this.alpha += 0.05;
+
+                ctx.globalAlpha = this.alpha;
+                ctx.drawImage(canvas2, x - this.radius / 2, y - this.radius / 2, this.radius, this.radius);
+                this.timePassed += this.speed;
+            }
+        }
+
+        for (let i = 0; i < maxStars; i++) {
+            stars.push(new Star());
+        }
+
+        function animation() {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.globalAlpha = 0.5;
+            ctx.fillStyle = '#000';  // 深黑色背景
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.globalCompositeOperation = 'lighter';
+            for (const star of stars) star.draw();
+
+            requestAnimationFrame(animation);
+        }
+        animation();
+
+        // 交互逻辑
+        const playMusicButton = document.getElementById('play-music');
+        const showCakeButton = document.getElementById('show-cake');
+        const showBlessingButton = document.getElementById('show-blessing');
+        const nextPageButton = document.getElementById('next-page');
+        const bgMusic = document.getElementById('bg-music');
+        const cakeImage = document.getElementById('cake-image');
+        const blessing = document.getElementById('blessing');
+        const cakeText = document.getElementById('cake-text');
+
+        const hideButtonAndShowNext = (currentButton, nextButton, delay = 10000) => {
+            setTimeout(() => {
+                currentButton.style.display = 'none';
+                if (nextButton) nextButton.style.display = 'inline-block';
+            }, delay);
+        };
+
+        playMusicButton.addEventListener('click', () => {
+            bgMusic.play();
+            hideButtonAndShowNext(playMusicButton, showCakeButton);
+        });
+
+        showCakeButton.addEventListener('click', () => {
+            cakeImage.style.display = 'block';
+            cakeText.style.display = 'block';
+            hideButtonAndShowNext(showCakeButton, showBlessingButton);
+        });
+
+        showBlessingButton.addEventListener('click', () => {
+            cakeImage.style.display = 'none';
+            cakeText.style.display = 'none';
+            blessing.style.display = 'block';
+            hideButtonAndShowNext(showBlessingButton, nextPageButton);
+        });
+
+        nextPageButton.addEventListener('click', () => {
+            window.location.href = '3d-heart.html';
+        });
+    </script>
+</body>
+
+</html>
+
+
+
+
+
